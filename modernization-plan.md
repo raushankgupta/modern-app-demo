@@ -217,7 +217,7 @@ Goal: Spring Boot REST API that preserves all legacy business rules, atomicity a
   - `modern/backend/README.md` documents run and test commands; `mvn test` passes.
 - **Todo:** generate project; config; `@RestControllerAdvice`; health endpoint; README.
 - **Context:** `pom.xml` (legacy, reference only); `src/main/resources/db.properties`.
-- **Status:** `[ ] pending`
+- **Status:** `[x] done` (Issue #7)
 
 #### B2 — [BE] SQLite data source and shared banking utilities
 - **Intent:** Port the legacy connection settings and reusable rules into the service layer.

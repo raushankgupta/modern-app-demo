@@ -21,8 +21,14 @@ if ! command -v sqlite3 >/dev/null 2>&1; then
   echo "ERROR: sqlite3 command-line tool not found. Install it and retry (see README.md)." >&2
   exit 1
 fi
+if ! command -v htpasswd >/dev/null 2>&1; then
+  echo "ERROR: htpasswd not found (needed to BCrypt-hash the demo password). See README.md." >&2
+  exit 1
+fi
 
-for f in "$SCHEMA_SQL" "$SEED_SQL"; do
+POST_INIT_SQL="$SCRIPT_DIR/post-init.sql"
+
+for f in "$SCHEMA_SQL" "$SEED_SQL" "$POST_INIT_SQL"; do
   if [ ! -f "$f" ]; then
     echo "ERROR: missing legacy SQL input: $f" >&2
     exit 1
@@ -33,6 +39,14 @@ rm -f "$TARGET_DB" "$TARGET_DB-journal" "$TARGET_DB-wal" "$TARGET_DB-shm"
 
 sqlite3 "$TARGET_DB" < "$SCHEMA_SQL"
 sqlite3 "$TARGET_DB" < "$SEED_SQL"
+
+# Modern-only: BCrypt-hash the demo password (cost 10). htpasswd emits the $2y$ prefix; Spring's
+# BCryptPasswordEncoder uses $2a$, so normalise it (the two are equivalent).
+DEMO_PASSWORD="admin123"
+ADMIN_HASH="$(htpasswd -bnBC 10 "" "$DEMO_PASSWORD" | tr -d ':\n' | sed 's/^\$2y\$/$2a$/')"
+POST_INIT="$(cat "$POST_INIT_SQL")"
+POST_INIT="${POST_INIT//__ADMIN_PASSWORD_HASH__/$ADMIN_HASH}"
+printf '%s\n' "$POST_INIT" | sqlite3 "$TARGET_DB"
 
 echo "Created $TARGET_DB"
 sqlite3 "$TARGET_DB" <<'SQL'

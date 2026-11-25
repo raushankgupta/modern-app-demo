@@ -32,6 +32,20 @@ check "10 customers"           "10" "$(q "SELECT COUNT(*) FROM CUSTOMERS")"
 check "15 accounts"            "15" "$(q "SELECT COUNT(*) FROM ACCOUNTS")"
 check "7 transactions"         "7"  "$(q "SELECT COUNT(*) FROM TRANSACTIONS")"
 check "reference sequence max" "6"  "$(q "SELECT MAX(REF_ID) FROM REFERENCE_SEQUENCE")"
+
+# --- Story D2: BCrypt-hashed demo password (modern copy only) ---
+PW="$(q "SELECT PASSWORD FROM EMPLOYEES WHERE USERNAME='admin'")"
+check "admin password is not plain text"   "1" "$([ "$PW" != "admin123" ] && echo 1 || echo 0)"
+check "admin password is a BCrypt hash"    "1" "$(echo "$PW" | grep -Eq '^\$2[ab]\$[0-9]{2}\$.{53}$' && echo 1 || echo 0)"
+check "hash length fits VARCHAR(100) (60)" "60" "${#PW}"
+check "legacy seed still has plain text (not edited)" "1" "$(grep -c "'admin', 'admin123'" "$ROOT/database/seed-data.sql")"
+if command -v htpasswd >/dev/null 2>&1; then
+  TMP="$(mktemp)"; echo "admin:${PW/\$2a\$/\$2y\$}" > "$TMP"
+  htpasswd -vb "$TMP" admin admin123 >/dev/null 2>&1; check "admin123 verifies against hash" "0" "$?"
+  htpasswd -vb "$TMP" admin wrongpw  >/dev/null 2>&1; check "wrong password is rejected"     "3" "$?"
+  rm -f "$TMP"
+fi
+
 check "modernbank.db git-ignored" "0" "$(git -C "$ROOT" check-ignore -q "$DB"; echo $?)"
 check "legacy src/database/pom.xml/legacybank.db unchanged" "$BEFORE" "$(legacy_hash)"
 

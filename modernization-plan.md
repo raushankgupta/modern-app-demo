@@ -191,7 +191,7 @@ Goal: A reproducible modern SQLite database built from the legacy schema and see
   - Schema column `PASSWORD VARCHAR(100)` fits the hash (length 60) without schema changes.
 - **Todo:** generate a BCrypt hash for the demo password; add `post-init.sql`; call it from `init.sh`.
 - **Context:** `database/seed-data.sql` (line with `admin`), `database/sqlite-schema.sql` (EMPLOYEES).
-- **Status:** `[ ] pending`
+- **Status:** `[x] done` (Issue #5)
 
 #### D3 — [DB] Verify database integrity and legacy immutability
 - **Intent:** Prove data integrity and that legacy assets stay unchanged.

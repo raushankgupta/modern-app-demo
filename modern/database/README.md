@@ -4,8 +4,9 @@ The modern app keeps using **SQLite** (no migration). `modernbank.db` is a *sepa
 legacy schema and seed SQL. The legacy files (`database/*.sql`, `legacybank.db`) are read-only inputs and are
 never modified.
 
-## Prerequisite
+## Prerequisites
 
+- `htpasswd` (see below)
 - `sqlite3` command-line tool (macOS ships with it; on Debian/Ubuntu: `sudo apt install sqlite3`;
   on Windows: install from <https://sqlite.org/download.html> or use WSL/Git Bash).
 
@@ -32,4 +33,15 @@ Expected result: 5 tables, 1 employee, 10 customers, 15 accounts, 7 transactions
 ./test-init.sh
 ```
 
-Checks table/row counts, repeat-run safety, git-ignore and that legacy files are unchanged.
+Checks table/row counts, repeat-run safety, git-ignore, BCrypt password hash, and that legacy files are unchanged.
+
+## Demo login and password hashing (Story D2)
+
+After the legacy seed, `init.sh` runs the modern-only `post-init.sql`, which replaces the plain-text `admin`
+password with a BCrypt hash (cost 10, 60 characters; fits the existing `PASSWORD VARCHAR(100)` column, so the
+schema is unchanged). The legacy `database/seed-data.sql` is not edited.
+
+- Demo login stays: **`admin` / `admin123`** (valid against the stored hash).
+- The hash is computed at init time with `htpasswd` and substituted into `post-init.sql`'s placeholder, so no
+  hash is committed to git. The salt is random, so the hash differs per run (all valid for `admin123`).
+- Extra prerequisite: `htpasswd` (included with macOS; on Debian/Ubuntu `sudo apt install apache2-utils`).
